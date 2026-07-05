@@ -25,7 +25,18 @@ function downloadSelfie(imageBase64, name, poseName) {
   a.click();
 }
 
+// Credentials config (Change these as you wish!)
+const ADMIN_USERNAME = "admin";
+const ADMIN_PASSWORD = "adminpassword";
+
 export default function AdminScreen() {
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return sessionStorage.getItem("admin_authenticated") === "true";
+  });
+  const [usernameInput, setUsernameInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
+  const [loginError, setLoginError] = useState("");
+
   const [tab, setTab]         = useState("selfies"); // selfies | players
   const [selfies, setSelfies] = useState([]);
   const [users, setUsers]     = useState([]);
@@ -34,7 +45,9 @@ export default function AdminScreen() {
   const [error, setError]     = useState("");
   const [selected, setSelected] = useState(null); // enlarged selfie
 
+  // Only run the database fetch effect if authenticated
   useEffect(() => {
+    if (!isAuthenticated) return;
     async function load() {
       setLoading(true);
       setError("");
@@ -57,7 +70,103 @@ export default function AdminScreen() {
       }
     }
     load();
-  }, []);
+  }, [isAuthenticated]);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (usernameInput === ADMIN_USERNAME && passwordInput === ADMIN_PASSWORD) {
+      setIsAuthenticated(true);
+      sessionStorage.setItem("admin_authenticated", "true");
+      setLoginError("");
+    } else {
+      setLoginError("Invalid username or password! ❌");
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    sessionStorage.removeItem("admin_authenticated");
+    setUsernameInput("");
+    setPasswordInput("");
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-game-gradient font-nunito flex flex-col items-center justify-center px-4 relative">
+        <div className="orb w-96 h-96 top-[-8rem] left-[-8rem] bg-selfie-pink-500 opacity-20" />
+        <div className="orb w-80 h-80 bottom-[-6rem] right-[-6rem] bg-selfie-purple-500 opacity-20" />
+
+        <motion.div
+          className="text-center mb-6"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="text-6xl mb-2">🔐</div>
+          <h1 className="text-3xl font-black text-white">
+            Admin <span className="text-gradient">Portal</span>
+          </h1>
+          <p className="text-white/50 text-sm mt-1">Authorized access only</p>
+        </motion.div>
+
+        <motion.div
+          className="glass-card w-full max-w-sm p-7 space-y-5"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-sm font-bold text-white/70 mb-2 uppercase tracking-wider">
+                Username
+              </label>
+              <input
+                type="text"
+                className="game-input"
+                placeholder="Enter username"
+                value={usernameInput}
+                onChange={(e) => setUsernameInput(e.target.value)}
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-white/70 mb-2 uppercase tracking-wider">
+                Password
+              </label>
+              <input
+                type="password"
+                className="game-input"
+                placeholder="Enter password"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                required
+              />
+            </div>
+
+            {loginError && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                className="text-selfie-pink-300 text-sm font-semibold text-center py-2 rounded-xl"
+                style={{ background: "rgba(255,31,126,0.15)" }}
+              >
+                {loginError}
+              </motion.div>
+            )}
+
+            <motion.button
+              type="submit"
+              className="btn-primary w-full text-center py-3 text-base"
+              whileTap={{ scale: 0.97 }}
+            >
+              Sign In 🚀
+            </motion.button>
+          </form>
+        </motion.div>
+      </div>
+    );
+  }
+
 
   // Merge user info into sessions
   const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
@@ -81,10 +190,19 @@ export default function AdminScreen() {
       <div className="relative z-10 max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <motion.div
-          className="text-center mb-8"
+          className="text-center mb-8 relative"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
+          <div className="absolute right-0 top-0">
+            <button
+              onClick={handleLogout}
+              className="px-3 py-1.5 rounded-xl font-bold text-xs bg-red-500/10 hover:bg-red-500/25 border border-red-500/30 text-red-300 transition-all active:scale-95"
+            >
+              🚪 Log Out
+            </button>
+          </div>
+
           <div className="text-5xl mb-2">👑</div>
           <h1 className="text-3xl font-black text-white mb-1">
             Admin <span className="text-gradient">Dashboard</span>
